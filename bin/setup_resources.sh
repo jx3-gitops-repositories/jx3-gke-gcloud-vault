@@ -56,24 +56,26 @@ function retry {
 echo "setting up the cloud resources for ecluster $CLUSTER_NAME in project $PROJECT_ID"
 
 export SLEEP="sleep 2"
-# CLI-DOC-GEN-START
+
 gcloud config set project $PROJECT_ID
 
 # enable secret manager
 gcloud services enable secretmanager.googleapis.com
 
 # setup the service accounts
-gcloud iam service-accounts create $CLUSTER_NAME-ex --display-name=$CLUSTER_NAME-ex --project $PROJECT_ID
-gcloud iam service-accounts create $CLUSTER_NAME-jb --display-name=$CLUSTER_NAME-jb --project $PROJECT_ID
+gcloud iam service-accounts create $CLUSTER_NAME-bc --display-name=$CLUSTER_NAME-bc --project $PROJECT_ID
+gcloud iam service-accounts create $CLUSTER_NAME-dn --display-name=$CLUSTER_NAME-dn --project $PROJECT_ID
 gcloud iam service-accounts create $CLUSTER_NAME-sm --display-name=$CLUSTER_NAME-sm --project $PROJECT_ID
-gcloud iam service-accounts create $CLUSTER_NAME-st --display-name=$CLUSTER_NAME-st --project $PROJECT_ID
-gcloud iam service-accounts create $CLUSTER_NAME-tk --display-name=$CLUSTER_NAME-tk --project $PROJECT_ID
-gcloud iam service-accounts create $CLUSTER_NAME-vo --display-name=$CLUSTER_NAME-vo --project $PROJECT_ID
+gcloud iam service-accounts create $CLUSTER_NAME-tekton --display-name=$CLUSTER_NAME-tekton --project $PROJECT_ID
 gcloud iam service-accounts create $CLUSTER_NAME-vt --display-name=$CLUSTER_NAME-vt --project $PROJECT_ID
+
+# TODO - still needed?
+gcloud iam service-accounts create $CLUSTER_NAME-jb --display-name=$CLUSTER_NAME-jb --project $PROJECT_ID
+gcloud iam service-accounts create $CLUSTER_NAME-vo --display-name=$CLUSTER_NAME-vo --project $PROJECT_ID
 
 echo "creating namespace $NAMESPACE for project $PROJECT_ID"
 
-curl https://raw.githubusercontent.com/jenkins-x-labs/cloud-resources/master/gcloud/setup.yaml | sed "s/{namespace}/$NAMESPACE/" | sed "s/{project_id}/$PROJECT_ID/" | sed "s/{cluster_name}/$CLUSTER_NAME/" | kubectl apply --validate=false -f -
+cat setup.yaml.tmpl | sed "s/{namespace}/$NAMESPACE/" | sed "s/{project_id}/$PROJECT_ID/" | sed "s/{cluster_name}/$CLUSTER_NAME/" | kubectl apply --validate=false -f -
 
 # change to the new jx namespace
 jx ns $NAMESPACE
@@ -84,16 +86,16 @@ kubectl config set-context --current --namespace=$NAMESPACE
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/external-dns]" \
-  $CLUSTER_NAME-ex@$PROJECT_ID.iam.gserviceaccount.com \
+  $CLUSTER_NAME-dn@$PROJECT_ID.iam.gserviceaccount.com \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/dns.admin \
-  --member "serviceAccount:$CLUSTER_NAME-ex@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-dn@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 
-# jx boot
+# jx boot - TODO still need?
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/jxl-boot]" \
@@ -139,31 +141,31 @@ retry gcloud projects add-iam-policy-binding $PROJECT_ID \
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/tekton-bot]" \
-  $CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com \
+  $CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/viewer \
-  --member "serviceAccount:$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com" \
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/storage.admin \
-  --member "serviceAccount:$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/storage.objectAdmin \
-  --member "serviceAccount:$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/storage.objectCreator \
-  --member "serviceAccount:$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/secretmanager.secretAccessor \
-  --member "serviceAccount:$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-tekton@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 # secret manager
@@ -178,37 +180,37 @@ retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member "serviceAccount:$CLUSTER_NAME-sm@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
-# storage
+# storage - for build controller to store logs etc
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/storage-sa]" \
-  $CLUSTER_NAME-st@$PROJECT_ID.iam.gserviceaccount.com \
+  $CLUSTER_NAME-bc@$PROJECT_ID.iam.gserviceaccount.com \
   --project $PROJECT_ID
 
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/bucketrepo-bucketrepo]" \
-  $CLUSTER_NAME-st@$PROJECT_ID.iam.gserviceaccount.com \
+  $CLUSTER_NAME-bc@$PROJECT_ID.iam.gserviceaccount.com \
   --project $PROJECT_ID
 
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/jxboot-helmfile-resources-controllerbuild]" \
-  $CLUSTER_NAME-st@$PROJECT_ID.iam.gserviceaccount.com \
+  $CLUSTER_NAME-bc@$PROJECT_ID.iam.gserviceaccount.com \
   --project $PROJECT_ID
 
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/storage.admin \
-  --member "serviceAccount:$CLUSTER_NAME-st@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-bc@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
 retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/storage.objectAdmin \
-  --member "serviceAccount:$CLUSTER_NAME-st@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:$CLUSTER_NAME-bc@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
 
-# velero
+# velero - TODO - still needed? could use -bc?
 retry gcloud iam service-accounts add-iam-policy-binding --quiet \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:$PROJECT_ID.svc.id.goog[$NAMESPACE/velero-sa]" \
@@ -251,6 +253,4 @@ retry gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role roles/cloudkms.cryptoKeyEncrypterDecrypter \
   --member "serviceAccount:$CLUSTER_NAME-vt@$PROJECT_ID.iam.gserviceaccount.com" \
   --project $PROJECT_ID
-
-# CLI-DOC-GEN-END
 
