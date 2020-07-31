@@ -5,7 +5,7 @@ metadata:
 upstream:
     type: git
     git:
-        commit: 0c890e06ab0d963b1508be3c3646fded90580b7e
+        commit: 0d5ce4ad8ee68572221ffd2fa009011639df9000
         repo: https://github.com/jenkins-x/jx3-gitops-template
         directory: /infra/gcloud/bin
         ref: master
