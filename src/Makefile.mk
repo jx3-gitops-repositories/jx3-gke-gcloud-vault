@@ -2,7 +2,7 @@ FETCH_DIR := build/base
 TMP_TEMPLATE_DIR := build/tmp
 OUTPUT_DIR := config-root
 
-VAULT_ADDR ?= https://vault.vault-infra:8200
+VAULT_ADDR ?= https://vault.secrets-infra:8200
 
 .PHONY: clean
 clean:
@@ -15,7 +15,7 @@ init:
 	cp -r src/* build
 	mkdir -p $(FETCH_DIR)/cluster/crds
 	mkdir -p $(FETCH_DIR)/namespaces/nginx
-	mkdir -p $(FETCH_DIR)/namespaces/vault-infra
+	mkdir -p $(FETCH_DIR)/namespaces/secrets-infra
 
 
 .PHONY: fetch
