@@ -13,14 +13,22 @@ These instructions assume you have cloned this git repository and run `cd` into 
 ls -al bin/README.md
 ```
 
-### Setup your cloud resources
+### Setup your project target
 
-Run the `./bin/create.sh` script:
+Run the `./bin/configure.sh` script to create target state that will be committed:
 
 ```bash 
 export PROJECT_ID="my-gcp-project"
 export CLUSTER_NAME="my-gke-cluster"
 
+./bin/configure.sh
+```
+
+### Setup your cloud resources
+
+Run the `./bin/create.sh` script to set up the resources in that target. This will also run `./bin/setup_resources.sh`.
+
+```bash 
 ./bin/create.sh
 ```
 
