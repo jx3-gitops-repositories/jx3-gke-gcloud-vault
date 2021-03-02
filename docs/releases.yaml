@@ -91,7 +91,7 @@
     repositoryUrl: https://storage.googleapis.com/jenkinsxio/charts
     sources:
     - https://github.com/jenkins-x-plugins/jx-build-controller
-    version: 0.0.32
+    version: 0.0.33
 - namespace: jx
   path: helmfiles/jx/helmfile.yaml
   releases:
@@ -185,7 +185,7 @@
     repositoryUrl: https://storage.googleapis.com/jenkinsxio/charts
     sources:
     - https://github.com/jenkins-x-plugins/jx-build-controller
-    version: 0.0.32
+    version: 0.0.33
 - namespace: nginx
   path: helmfiles/nginx/helmfile.yaml
   releases:
